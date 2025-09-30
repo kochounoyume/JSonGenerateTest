@@ -14,13 +14,36 @@ Translation: "One issue I encountered was that JsonIgnoreCondition.WhenWritingNu
 
 ### .NET 9 Findings
 
-**Good news!** In .NET 9, this behavioral difference has been **resolved**. Both reflection-based and Source Generator-based serialization now behave consistently with `JsonIgnoreCondition.WhenWritingNull` for `Nullable<T>` properties.
+**Good news!** In .NET 9, the behavioral difference has been **resolved**. Both reflection-based and Source Generator-based serialization now behave consistently with `JsonIgnoreCondition.WhenWritingNull` for `Nullable<T>` properties.
+
+### .NET 8 Findings
+
+**Also fixed!** In .NET 8, both approaches also work consistently.
+
+### .NET 7 Findings - Issue Reproduced! ⚠️
+
+**We successfully reproduced the issue!** In .NET 7, there IS a behavioral difference:
+
+- **Reflection-based serialization**: Correctly ignores null `Nullable<T>` properties ✅
+- **Source Generator-based serialization**: Does NOT ignore null `Nullable<T>` properties ❌
+
+This confirms the issue mentioned in the blog post existed in .NET 7 and was fixed in .NET 8.
 
 ### Test Output
 
 The tests clearly demonstrate both scenarios:
 
-**Without WhenWritingNull** (nulls ARE serialized):
+**In .NET 7** (issue exists):
+
+Reflection with WhenWritingNull:
+```json
+{
+  "Name": "John Doe",
+  "IsActive": true
+}
+```
+
+Source Generator with WhenWritingNull (INCORRECT):
 ```json
 {
   "Name": "John Doe",
@@ -31,17 +54,15 @@ The tests clearly demonstrate both scenarios:
 }
 ```
 
-**With WhenWritingNull** (nulls are excluded):
+**In .NET 8 and .NET 9** (issue fixed):
+
+Both approaches with WhenWritingNull produce:
 ```json
 {
   "Name": "John Doe",
   "IsActive": true
 }
 ```
-
-As you can see, both approaches produce identical output, correctly:
-- **Including** null `Nullable<T>` properties when no ignore condition is set
-- **Excluding** null `Nullable<T>` properties when `WhenWritingNull` is set
 
 ## Running the Tests
 
@@ -64,4 +85,12 @@ dotnet test
 
 ## Conclusion
 
-The inconsistency between reflection-based and Source Generator-based JSON serialization regarding `JsonIgnoreCondition.WhenWritingNull` with `Nullable<T>` properties has been fixed in .NET 9. Developers can now use either approach with confidence that they will produce consistent results.
+The inconsistency between reflection-based and Source Generator-based JSON serialization regarding `JsonIgnoreCondition.WhenWritingNull` with `Nullable<T>` properties:
+
+- ❌ **DID exist in .NET 7** - Source Generator did not respect the setting
+- ✅ **Was FIXED in .NET 8** - Both approaches now work consistently  
+- ✅ **Remains fixed in .NET 9** - Consistent behavior continues
+
+**Recommendation:**
+- If using .NET 7, either upgrade to .NET 8+ or apply the workaround from the blog post
+- If using .NET 8 or later, both serialization approaches work correctly
