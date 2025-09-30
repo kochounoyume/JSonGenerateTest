@@ -46,9 +46,24 @@ var sourceGenOptions = new JsonSerializerOptions
 };
 ```
 
-## Consistent Output Across All Tests
+## Output Comparison
 
-Both approaches produce identical JSON:
+### Without WhenWritingNull (baseline showing nulls ARE serialized)
+
+Both approaches produce:
+```json
+{
+  "Name": "John Doe",
+  "Age": null,
+  "BirthDate": null,
+  "IsActive": true,
+  "Salary": null
+}
+```
+
+### With WhenWritingNull (testing if nulls are excluded)
+
+Both approaches produce:
 ```json
 {
   "Name": "John Doe",

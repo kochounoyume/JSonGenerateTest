@@ -18,32 +18,30 @@ Translation: "One issue I encountered was that JsonIgnoreCondition.WhenWritingNu
 
 ### Test Output
 
+The tests clearly demonstrate both scenarios:
+
+**Without WhenWritingNull** (nulls ARE serialized):
+```json
+{
+  "Name": "John Doe",
+  "Age": null,
+  "BirthDate": null,
+  "IsActive": true,
+  "Salary": null
+}
 ```
-=== Reflection-based Serialization (WhenWritingNull) ===
+
+**With WhenWritingNull** (nulls are excluded):
+```json
 {
   "Name": "John Doe",
   "IsActive": true
 }
-
-=== Source Generator-based Serialization (WhenWritingNull) ===
-{
-  "Name": "John Doe",
-  "IsActive": true
-}
-
-=== Source Generator with Direct JsonIgnore Attributes ===
-{
-  "Name": "Jane Doe",
-  "IsActive": true
-}
-
-=== Comparison Analysis ===
-Reflection JSON length: 44
-Source Generator JSON length: 44
-Reflection and Source Generator produce same result: True
 ```
 
-As you can see, both approaches produce identical output, correctly ignoring the null `Nullable<T>` properties (`Age`, `BirthDate`, and `Salary`).
+As you can see, both approaches produce identical output, correctly:
+- **Including** null `Nullable<T>` properties when no ignore condition is set
+- **Excluding** null `Nullable<T>` properties when `WhenWritingNull` is set
 
 ## Running the Tests
 

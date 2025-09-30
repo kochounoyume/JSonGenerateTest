@@ -16,14 +16,38 @@ var testModel = new TestModel
     Salary = null      // This should be ignored with WhenWritingNull
 };
 
-var testModelWithDirectIgnore = new TestModelWithDirectIgnore
+// ===================================================================
+// FIRST: Show that nulls ARE serialized without WhenWritingNull
+// ===================================================================
+Console.WriteLine("=== WITHOUT WhenWritingNull (showing nulls are normally serialized) ===");
+Console.WriteLine();
+
+var noIgnoreOptions = new JsonSerializerOptions
 {
-    Name = "Jane Doe",
-    Age = null,        // This should be ignored with WhenWritingDefault
-    BirthDate = null,  // This should be ignored with WhenWritingDefault
-    IsActive = true,
-    Salary = null      // This should be ignored with WhenWritingDefault
+    WriteIndented = true
 };
+
+Console.WriteLine("Reflection (No Ignore Condition):");
+var reflectionNoIgnore = JsonSerializer.Serialize(testModel, noIgnoreOptions);
+Console.WriteLine(reflectionNoIgnore);
+Console.WriteLine();
+
+var sourceGenNoIgnoreOptions = new JsonSerializerOptions
+{
+    WriteIndented = true,
+    TypeInfoResolver = TestJsonContext.Default
+};
+
+Console.WriteLine("Source Generator (No Ignore Condition):");
+var sourceGenNoIgnore = JsonSerializer.Serialize(testModel, sourceGenNoIgnoreOptions);
+Console.WriteLine(sourceGenNoIgnore);
+Console.WriteLine();
+
+// ===================================================================
+// SECOND: Show that nulls are IGNORED with WhenWritingNull
+// ===================================================================
+Console.WriteLine("=== WITH WhenWritingNull (testing if nulls are ignored) ===");
+Console.WriteLine();
 
 // Test reflection-based serialization with WhenWritingNull
 var reflectionOptions = new JsonSerializerOptions
@@ -32,7 +56,7 @@ var reflectionOptions = new JsonSerializerOptions
     DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull
 };
 
-Console.WriteLine("=== Reflection-based Serialization (WhenWritingNull) ===");
+Console.WriteLine("Reflection (WhenWritingNull):");
 var reflectionJson = JsonSerializer.Serialize(testModel, reflectionOptions);
 Console.WriteLine(reflectionJson);
 Console.WriteLine();
@@ -45,39 +69,40 @@ var sourceGenOptions = new JsonSerializerOptions
     TypeInfoResolver = TestJsonContext.Default
 };
 
-Console.WriteLine("=== Source Generator-based Serialization (WhenWritingNull) ===");
+Console.WriteLine("Source Generator (WhenWritingNull):");
 var sourceGenJson = JsonSerializer.Serialize(testModel, sourceGenOptions);
 Console.WriteLine(sourceGenJson);
 Console.WriteLine();
 
-// Test source generator with direct JsonIgnore attributes
-Console.WriteLine("=== Source Generator with Direct JsonIgnore Attributes ===");
-var directIgnoreJson = JsonSerializer.Serialize(testModelWithDirectIgnore, sourceGenOptions);
-Console.WriteLine(directIgnoreJson);
+// ===================================================================
+// ANALYSIS
+// ===================================================================
+Console.WriteLine("=== ANALYSIS ===");
 Console.WriteLine();
 
-// Compare the results
-Console.WriteLine("=== Comparison Analysis ===");
-Console.WriteLine($"Reflection JSON length: {reflectionJson.Length}");
-Console.WriteLine($"Source Generator JSON length: {sourceGenJson.Length}");
-Console.WriteLine($"Direct Ignore JSON length: {directIgnoreJson.Length}");
-Console.WriteLine($"Reflection and Source Generator produce same result: {reflectionJson.Equals(sourceGenJson)}");
-Console.WriteLine($"Source Generator and Direct Ignore produce same result: {sourceGenJson.Equals(directIgnoreJson)}");
-
-// Additional analysis for .NET 8
+Console.WriteLine("Without WhenWritingNull:");
+Console.WriteLine($"  Reflection includes nulls: {reflectionNoIgnore.Contains("null")}");
+Console.WriteLine($"  Source Generator includes nulls: {sourceGenNoIgnore.Contains("null")}");
+Console.WriteLine($"  Both behave the same: {reflectionNoIgnore.Replace("\r", "").Replace("\n", "").Replace(" ", "") == sourceGenNoIgnore.Replace("\r", "").Replace("\n", "").Replace(" ", "")}");
 Console.WriteLine();
-Console.WriteLine("=== .NET 8 Specific Analysis ===");
-if (!reflectionJson.Equals(sourceGenJson))
+
+Console.WriteLine("With WhenWritingNull:");
+Console.WriteLine($"  Reflection excludes nulls: {!reflectionJson.Contains("null") && !reflectionJson.Contains("Age") && !reflectionJson.Contains("Salary")}");
+Console.WriteLine($"  Source Generator excludes nulls: {!sourceGenJson.Contains("null") && !sourceGenJson.Contains("Age") && !sourceGenJson.Contains("Salary")}");
+Console.WriteLine($"  Both behave the same: {reflectionJson.Replace("\r", "").Replace("\n", "").Replace(" ", "") == sourceGenJson.Replace("\r", "").Replace("\n", "").Replace(" ", "")}");
+Console.WriteLine();
+
+Console.WriteLine("CONCLUSION:");
+if (reflectionJson.Replace("\r", "").Replace("\n", "").Replace(" ", "") == sourceGenJson.Replace("\r", "").Replace("\n", "").Replace(" ", ""))
 {
-    Console.WriteLine("⚠️  BEHAVIORAL DIFFERENCE DETECTED:");
-    Console.WriteLine("   Reflection-based and Source Generator-based serialization produce different results!");
-    Console.WriteLine("   This confirms the issue mentioned in the blog post exists in .NET 8.");
+    Console.WriteLine("✅ No behavioral difference in .NET 8!");
+    Console.WriteLine("   Both reflection and Source Generator respect WhenWritingNull for Nullable<T> properties.");
 }
 else
 {
-    Console.WriteLine("✅ No behavioral difference detected in .NET 8.");
-    Console.WriteLine("   Both approaches produce identical results.");
+    Console.WriteLine("⚠️  BEHAVIORAL DIFFERENCE DETECTED!");
+    Console.WriteLine("   This matches the issue described in the blog post.");
 }
 
-// Run detailed tests
+// Run additional detailed tests
 DetailedTest.RunDetailedComparison();
