@@ -13,9 +13,11 @@ jobs:
           dotnet-version: "10.0.x"
       - name: Run multi-line C# code with NuGet library
         run: |
-          echo '#:package Newtonsoft.Json@13.0.3
+          cat <<'EOF' | dotnet run -c Release -
+          #:package Newtonsoft.Json@13.0.3
           using System;
           using Newtonsoft.Json;
           var person = new { Name = "Alice", Age = 30, City = "Tokyo" };
           var json = JsonConvert.SerializeObject(person, Formatting.Indented);
-          Console.WriteLine($"Serialized JSON:\n{json}");' | dotnet run -c Release -
+          Console.WriteLine($"Serialized JSON:\n{json}");
+          EOF
