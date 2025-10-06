@@ -7,10 +7,12 @@ jobs:
   run-csharp-preview:
     runs-on: ubuntu-latest
     steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
       - name: Setup .NET 10 RC 1 SDK
         uses: actions/setup-dotnet@v5
         with:
           dotnet-version: "10.0.x"
-      - name: Run Hello World with File-based Apps
+      - name: Run C# app with NuGet library
         run: |
-          echo 'Console.WriteLine("Hello from .NET 10 RC 1 file-based app!");' | dotnet run -c Release -
+          dotnet run -c Release
