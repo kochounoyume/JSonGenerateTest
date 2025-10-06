@@ -11,6 +11,11 @@ jobs:
         uses: actions/setup-dotnet@v5
         with:
           dotnet-version: "10.0.x"
-      - name: Run Hello World with File-based Apps
+      - name: Run multi-line C# code with NuGet library
         run: |
-          echo 'Console.WriteLine("Hello from .NET 10 RC 1 file-based app!");' | dotnet run -c Release -
+          echo '#r "nuget:Newtonsoft.Json,13.0.3"
+          using System;
+          using Newtonsoft.Json;
+          var person = new { Name = "Alice", Age = 30, City = "Tokyo" };
+          var json = JsonConvert.SerializeObject(person, Formatting.Indented);
+          Console.WriteLine($"Serialized JSON:\n{json}");' | dotnet run -c Release -
