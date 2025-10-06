@@ -1,0 +1,62 @@
+---
+name: Create Sample PR
+
+on:
+  workflow_dispatch:
+
+jobs:
+  create-pr:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Configure Git
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email \
+            "github-actions[bot]@users.noreply.github.com"
+
+      - name: Create new branch
+        run: |
+          TIMESTAMP=$(date +%Y%m%d-%H%M%S)
+          BRANCH_NAME="sample-pr-${TIMESTAMP}"
+          git checkout -b "$BRANCH_NAME"
+          echo "BRANCH_NAME=$BRANCH_NAME" >> $GITHUB_ENV
+
+      - name: Make sample changes
+        run: |
+          echo "# Sample PR" >> SAMPLE.md
+          echo "" >> SAMPLE.md
+          echo "This is a sample PR created by GitHub Actions \
+          at $(date)" >> SAMPLE.md
+          git add SAMPLE.md
+
+      - name: Commit changes
+        run: |
+          git commit -m "Add sample file for PR demonstration"
+
+      - name: Push branch
+        run: |
+          git push origin "$BRANCH_NAME"
+
+      - name: Create Pull Request
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh pr create \
+            --title "Sample PR created by GitHub Actions" \
+            --body "This is an automated PR created for \
+          demonstration purposes.
+
+          **Created at:** $(date)
+          **Branch:** $BRANCH_NAME
+
+          This PR demonstrates using \`gh pr create\` in \
+          GitHub Actions." \
+            --base main \
+            --head "$BRANCH_NAME"
