@@ -14,9 +14,7 @@ jobs:
 
       - name: Create C# File-based App
         run: |
-          cat > Program.cs << 'EOF'
-          Console.WriteLine("Hello from .NET 10 Preview file-based app!");
-          EOF
+          echo 'Console.WriteLine("Hello from .NET 10 Preview file-based app!");' > Program.cs
 
       - name: Run C# File-based App
         run: |
