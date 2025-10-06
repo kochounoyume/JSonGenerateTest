@@ -12,10 +12,6 @@ jobs:
         with:
           dotnet-version: '10.0.100-preview.*'
 
-      - name: Create C# File-based App
+      - name: Run Hello World with File-based Apps
         run: |
-          echo 'Console.WriteLine("Hello from .NET 10 Preview file-based app!");' > Program.cs
-
-      - name: Run C# File-based App
-        run: |
-          dotnet run --langVersion preview
+          echo 'Console.WriteLine("Hello from .NET 10 Preview file-based app!");' | dotnet -
