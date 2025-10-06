@@ -1,0 +1,23 @@
+name: Run C# File-based Script (.NET 10 Preview)
+
+on:
+  workflow_dispatch:
+
+jobs:
+  run-csharp-preview:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Setup .NET 10 Preview SDK
+        uses: actions/setup-dotnet@v3
+        with:
+          dotnet-version: '10.0.100-preview.*'
+
+      - name: Create C# File-based App
+        run: |
+          cat > Program.cs << 'EOF'
+          Console.WriteLine("Hello from .NET 10 Preview file-based app!");
+          EOF
+
+      - name: Run C# File-based App
+        run: |
+          dotnet run --langVersion preview
