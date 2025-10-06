@@ -1,0 +1,107 @@
+---
+name: Create PR with GraphQL
+
+on:
+  workflow_dispatch:
+
+jobs:
+  create-pr-graphql:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Configure Git
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email \
+            "github-actions[bot]@users.noreply.github.com"
+
+      - name: Create new branch
+        run: |
+          TIMESTAMP=$(date +%Y%m%d-%H%M%S)
+          BRANCH_NAME="graphql-pr-${TIMESTAMP}"
+          git checkout -b "$BRANCH_NAME"
+          echo "BRANCH_NAME=$BRANCH_NAME" >> $GITHUB_ENV
+
+      - name: Make sample changes
+        run: |
+          echo "# GraphQL PR Sample" >> GRAPHQL_SAMPLE.md
+          echo "" >> GRAPHQL_SAMPLE.md
+          echo "This is a sample PR created by GitHub Actions \
+          using GraphQL API at $(date)" >> GRAPHQL_SAMPLE.md
+          git add GRAPHQL_SAMPLE.md
+
+      - name: Commit changes
+        run: |
+          git commit -m "Add sample file for GraphQL PR demonstration"
+
+      - name: Push branch
+        run: |
+          git push origin "$BRANCH_NAME"
+
+      - name: Get repository ID
+        id: get_repo_id
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          QUERY=$(cat <<'EOF'
+          query {
+            repository(owner: "${{ github.repository_owner }}", name: "${{ github.event.repository.name }}") {
+              id
+            }
+          }
+          EOF
+          )
+          
+          REPO_ID=$(curl -s -X POST \
+            -H "Authorization: bearer $GH_TOKEN" \
+            -H "Content-Type: application/json" \
+            -d "$(jq -n --arg q "$QUERY" '{query: $q}')" \
+            https://api.github.com/graphql | \
+            jq -r '.data.repository.id')
+          
+          echo "REPO_ID=$REPO_ID" >> $GITHUB_ENV
+          echo "Repository ID: $REPO_ID"
+
+      - name: Create Pull Request with GraphQL
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          TIMESTAMP=$(date)
+          MUTATION=$(cat <<EOF
+          mutation {
+            createPullRequest(input: {
+              repositoryId: "${{ env.REPO_ID }}",
+              baseRefName: "main",
+              headRefName: "${{ env.BRANCH_NAME }}",
+              title: "Sample PR created by GitHub Actions (GraphQL)",
+              body: "This is an automated PR created using GitHub GraphQL API.\\n\\n**Created at:** $TIMESTAMP\\n**Branch:** ${{ env.BRANCH_NAME }}\\n\\nThis PR demonstrates using GraphQL mutation to create pull requests in GitHub Actions."
+            }) {
+              pullRequest {
+                number
+                url
+              }
+            }
+          }
+          EOF
+          )
+          
+          RESPONSE=$(curl -s -X POST \
+            -H "Authorization: bearer $GH_TOKEN" \
+            -H "Content-Type: application/json" \
+            -d "$(jq -n --arg q "$MUTATION" '{query: $q}')" \
+            https://api.github.com/graphql)
+          
+          echo "GraphQL Response:"
+          echo "$RESPONSE" | jq '.'
+          
+          PR_NUMBER=$(echo "$RESPONSE" | jq -r '.data.createPullRequest.pullRequest.number')
+          PR_URL=$(echo "$RESPONSE" | jq -r '.data.createPullRequest.pullRequest.url')
+          
+          echo "Created PR #$PR_NUMBER"
+          echo "URL: $PR_URL"
