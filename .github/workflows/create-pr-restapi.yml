@@ -1,0 +1,75 @@
+---
+name: Create PR with REST API
+
+on:
+  workflow_dispatch:
+
+jobs:
+  create-pr-restapi:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Configure Git
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email \
+            "github-actions[bot]@users.noreply.github.com"
+
+      - name: Create new branch
+        run: |
+          TIMESTAMP=$(date +%Y%m%d-%H%M%S)
+          BRANCH_NAME="restapi-pr-${TIMESTAMP}"
+          git checkout -b "$BRANCH_NAME"
+          echo "BRANCH_NAME=$BRANCH_NAME" >> $GITHUB_ENV
+
+      - name: Make sample changes
+        run: |
+          echo "# REST API PR Sample" >> RESTAPI_SAMPLE.md
+          echo "" >> RESTAPI_SAMPLE.md
+          echo "This is a sample PR created by GitHub Actions \
+          using REST API at $(date)" >> RESTAPI_SAMPLE.md
+          git add RESTAPI_SAMPLE.md
+
+      - name: Commit changes
+        run: |
+          git commit -m "Add sample file for REST API PR demonstration"
+
+      - name: Push branch
+        run: |
+          git push origin "$BRANCH_NAME"
+
+      - name: Create Pull Request with REST API
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          TIMESTAMP=$(date)
+          
+          RESPONSE=$(curl -s -X POST \
+            -H "Authorization: token $GH_TOKEN" \
+            -H "Accept: application/vnd.github.v3+json" \
+            -H "Content-Type: application/json" \
+            https://api.github.com/repos/${{ github.repository }}/pulls \
+            -d @- <<EOF
+          {
+            "title": "Sample PR created by GitHub Actions (REST API)",
+            "body": "This is an automated PR created using GitHub REST API.\n\n**Created at:** $TIMESTAMP\n**Branch:** ${{ env.BRANCH_NAME }}\n\nThis PR demonstrates using REST API to create pull requests in GitHub Actions.",
+            "head": "${{ env.BRANCH_NAME }}",
+            "base": "main"
+          }
+          EOF
+          )
+          
+          echo "REST API Response:"
+          echo "$RESPONSE" | jq '.'
+          
+          PR_NUMBER=$(echo "$RESPONSE" | jq -r '.number')
+          PR_URL=$(echo "$RESPONSE" | jq -r '.html_url')
+          
+          echo "Created PR #$PR_NUMBER"
+          echo "URL: $PR_URL"
